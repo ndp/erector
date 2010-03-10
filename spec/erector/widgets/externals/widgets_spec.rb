@@ -45,16 +45,70 @@ module Erector
 
       end
       describe JavascriptEmbed do
-        subject {JavascriptEmbed.new :body=>'alert("works!");'}
 
-        its(:to_s) {should == '<script type="text/javascript">alert("works!");</script>'}
+        context 'simple embed' do
+          subject {JavascriptEmbed.new 'alert("works!");'}
+          its(:to_s) {should == "<script type=\"text/javascript\">\n// <![CDATA[\nalert(\"works!\");\n// ]]>\n</script>\n"}
+        end
+        context 'simple embed of file' do
+          subject {JavascriptEmbed.new :file=>"#{File.dirname(__FILE__)}/../../sample-file.txt"}
+          its(:to_s) {should == "<script type=\"text/javascript\">\n// <![CDATA[\nsample file contents, 2 + 2 = \#{2 + 2}\n\n// ]]>\n</script>\n"}
+        end
+        context 'simple embed of file with interpolation' do
+          subject {JavascriptEmbed.new :file=>"#{File.dirname(__FILE__)}/../../sample-file.txt", :interpolate=>true}
+          its(:to_s) {should == "<script type=\"text/javascript\">\n// <![CDATA[\nsample file contents, 2 + 2 = 4\n\n// ]]>\n</script>\n"}
+        end
+
+        context 'interpolated embed' do
+          Message='Hello there!'
+          subject {JavascriptEmbed.new :body=>'alert("#{Message}");', :interpolate=>true}
+          its(:to_s) {should == "<script type=\"text/javascript\">\n// <![CDATA[\nalert(\"Hello there!\");\n// ]]>\n</script>\n"}
+        end
+
+        context 'non-interpolated embed' do
+          subject {JavascriptEmbed.new :body=>'alert("#{Message}");', :interpolate=>false}
+          its(:to_s) {should == "<script type=\"text/javascript\">\n// <![CDATA[\nalert(\"\#{Message}\");\n// ]]>\n</script>\n"}
+        end
+
       end
 
       describe StylesheetEmbed do
-        subject {StylesheetEmbed.new :body=>'.red { color: blue }'}
-        its(:to_s) {should == '<style type="text/css">.red { color: blue }</style>'}
+        context 'simple embed' do
+          subject {StylesheetEmbed.new '.red { color: blue }'}
+          its(:to_s) {should == '<style type="text/css">.red { color: blue }</style>'}
+        end
+        context 'interpolated embed' do
+          RedColor = '#ff0000'
+          subject {StylesheetEmbed.new '.red { color: #{RedColor} }', :interpolate=>true}
+          its(:to_s) {should == '<style type="text/css">.red { color: #ff0000 }</style>'}
+        end
+        context 'non-interpolated embed' do
+          subject {StylesheetEmbed.new '.red { color: #{RedColor} }', :interpolate=>false}
+          its(:to_s) {should == '<style type="text/css">.red { color: #{RedColor} }</style>'}
+        end
+        context 'simple embed of file' do
+          subject {StylesheetEmbed.new :file=>"#{File.dirname(__FILE__)}/../../sample-file.txt"}
+          its(:to_s) {should == "<style type=\"text/css\">sample file contents, 2 + 2 = \#{2 + 2}\n</style>"}
+        end
+        context 'simple embed of file with interpolation' do
+          subject {StylesheetEmbed.new :file=>"#{File.dirname(__FILE__)}/../../sample-file.txt", :interpolate=>true}
+          its(:to_s) {should == "<style type=\"text/css\">sample file contents, 2 + 2 = 4\n</style>"}
+        end
       end
 
+
+#      describe Concatenator do
+#        class DivWidget < Erector::Widget; def content div; end; end;
+#        it 'should output a div' do
+#          DivWidget.new.to_s.should == '<div />'
+#        end
+#        it 'should output nothing with no components to render' do
+#          Concatenator.new(:widgets=>[]).to_s.should == ''
+#        end
+#        it 'should output its contents' do
+#          Concatenator.new(:widgets=>[DivWidget, DivWidget]).to_a.should == '<div /><div />'
+#        end
+#      end
     end
   end
 end
